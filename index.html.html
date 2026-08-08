@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>جدول الصوتيات الصينية التفاعلي - Pinyin Interactive Chart</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --cell-bg: #ffffff;
+            --cell-hover: #3b82f6;
+            --cell-hover-text: #ffffff;
+            --empty-bg: #f1f5f9;
+            --header-bg: #1e293b;
+            --header-text: #f8fafc;
+            --sticky-col-bg: #f8fafc;
+            --active-cell: #10b981;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f172a;
+                --card-bg: #1e293b;
+                --text-main: #f8fafc;
+                --text-muted: #94a3b8;
+                --border: #334155;
+                --cell-bg: #1e293b;
+                --empty-bg: #0f172a;
+                --header-bg: #0f172a;
+                --sticky-col-bg: #1e293b;
+                --primary-light: #1e293b;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            background: var(--bg);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            font-size: 0.88rem;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        select:focus {
+            border-color: var(--primary);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #10b981;
+        }
+
+        /* Table Responsive Container */
+        .table-wrapper {
+            overflow: auto;
+            max-height: 70vh;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            position: relative;
+            background: var(--card-bg);
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            border-left: 1px solid var(--border);
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        th {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* Fixed First Header */
+        th:first-child {
+            position: sticky;
+            right: 0;
+            z-index: 20;
+            background-color: #0f172a;
+            border-left: 2px solid var(--border);
+        }
+
+        /* Fixed First Column */
+        tbody td:first-child {
+            position: sticky;
+            right: 0;
+            z-index: 5;
+            background-color: var(--sticky-col-bg);
+            font-weight: 700;
+            color: var(--primary);
+            border-left: 2px solid var(--border);
+            box-shadow: -2px 0 5px rgba(0,0,0,0.03);
+        }
+
+        .pinyin-cell {
+            background-color: var(--cell-bg);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease, color 0.15s ease;
+            font-family: SFProText-Medium, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-weight: 500;
+        }
+
+        .pinyin-cell:hover {
+            background-color: var(--cell-hover);
+            color: var(--cell-hover-text);
+        }
+
+        .pinyin-cell:active {
+            transform: scale(0.92);
+        }
+
+        .empty-cell {
+            background-color: var(--empty-bg);
+            color: var(--text-muted);
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        .playing {
+            background-color: var(--active-cell) !important;
+            color: #ffffff !important;
+            font-weight: bold;
+            animation: pulse 0.4s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        /* Footer Info */
+        footer {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 640px) {
+            body { padding: 8px; }
+            .container { padding: 12px; border-radius: 12px; }
+            h1 { font-size: 1.2rem; }
+            th, td { padding: 8px 10px; font-size: 0.85rem; }
+            .controls { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1> جدول الصوتيات الصينية التفاعلي (Pinyin)</h1>
+        <p class="subtitle">اضغط على أي مقطع لمساع النطق الصريح والمباشر عبر المحرك الصوتي التفاعلي</p>
+    </header>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="engine">محرك الصوت:</label>
+            <select id="engine">
+                <option value="tts">المحرك التلقائي الذكي (Web Speech API)</option>
+                <option value="local">المجلد المحلي (ملفات MP3)</option>
+            </select>
+        </div>
+        <div class="status-badge">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="status">جاهز للتشغيل</span>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Shengmu / Yunmu</th>
+                    <th>a</th><th>o</th><th>e</th><th>i</th><th>u</th><th>ü</th><th>ai</th><th>ei</th><th>ao</th><th>ou</th><th>io</th><th>ie</th><th>iao</th><th>iou</th><th>ua</th><th>uo</th><th>uei</th><th>an</th><th>en</th><th>in</th><th>ian</th><th>uan</th><th>uen</th><th>üan</th><th>ün</th><th>ang</th><th>eng</th><th>ong</th><th>ing</th><th>iang</th><th>iong</th><th>uang</th><th>ueng</th>
+                </tr>
+            </thead>
+            <tbody>
+<tr><td>b</td><td class="pinyin-cell" onclick="playPinyin('ba', this)">ba</td><td class="pinyin-cell" onclick="playPinyin('bo', this)">bo</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('bi', this)">bi</td><td class="pinyin-cell" onclick="playPinyin('bu', this)">bu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('bai', this)">bai</td><td class="pinyin-cell" onclick="playPinyin('bei', this)">bei</td><td class="pinyin-cell" onclick="playPinyin('bao', this)">bao</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('bie', this)">bie</td><td class="pinyin-cell" onclick="playPinyin('biao', this)">biao</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ban', this)">ban</td><td class="pinyin-cell" onclick="playPinyin('ben', this)">ben</td><td class="pinyin-cell" onclick="playPinyin('bin', this)">bin</td><td class="pinyin-cell" onclick="playPinyin('bian', this)">bian</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('bang', this)">bang</td><td class="pinyin-cell" onclick="playPinyin('beng', this)">beng</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('bing', this)">bing</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>p</td><td class="pinyin-cell" onclick="playPinyin('pa', this)">pa</td><td class="pinyin-cell" onclick="playPinyin('po', this)">po</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('pi', this)">pi</td><td class="pinyin-cell" onclick="playPinyin('pu', this)">pu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('pai', this)">pai</td><td class="pinyin-cell" onclick="playPinyin('pei', this)">pei</td><td class="pinyin-cell" onclick="playPinyin('pao', this)">pao</td><td class="pinyin-cell" onclick="playPinyin('pou', this)">pou</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('pie', this)">pie</td><td class="pinyin-cell" onclick="playPinyin('piao', this)">piao</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('pan', this)">pan</td><td class="pinyin-cell" onclick="playPinyin('pen', this)">pen</td><td class="pinyin-cell" onclick="playPinyin('pin', this)">pin</td><td class="pinyin-cell" onclick="playPinyin('pian', this)">pian</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('pang', this)">pang</td><td class="pinyin-cell" onclick="playPinyin('peng', this)">peng</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ping', this)">ping</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>m</td><td class="pinyin-cell" onclick="playPinyin('ma', this)">ma</td><td class="pinyin-cell" onclick="playPinyin('mo', this)">mo</td><td class="pinyin-cell" onclick="playPinyin('me', this)">me</td><td class="pinyin-cell" onclick="playPinyin('mi', this)">mi</td><td class="pinyin-cell" onclick="playPinyin('mu', this)">mu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('mai', this)">mai</td><td class="pinyin-cell" onclick="playPinyin('mei', this)">mei</td><td class="pinyin-cell" onclick="playPinyin('mao', this)">mao</td><td class="pinyin-cell" onclick="playPinyin('mou', this)">mou</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('mie', this)">mie</td><td class="pinyin-cell" onclick="playPinyin('miao', this)">miao</td><td class="pinyin-cell" onclick="playPinyin('miu', this)">miu</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('man', this)">man</td><td class="pinyin-cell" onclick="playPinyin('men', this)">men</td><td class="pinyin-cell" onclick="playPinyin('min', this)">min</td><td class="pinyin-cell" onclick="playPinyin('mian', this)">mian</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('mang', this)">mang</td><td class="pinyin-cell" onclick="playPinyin('meng', this)">meng</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ming', this)">ming</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>f</td><td class="pinyin-cell" onclick="playPinyin('fa', this)">fa</td><td class="pinyin-cell" onclick="playPinyin('fo', this)">fo</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('fu', this)">fu</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('fei', this)">fei</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('fou', this)">fou</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('fan', this)">fan</td><td class="pinyin-cell" onclick="playPinyin('fen', this)">fen</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('fang', this)">fang</td><td class="pinyin-cell" onclick="playPinyin('feng', this)">feng</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>d</td><td class="pinyin-cell" onclick="playPinyin('da', this)">da</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('de', this)">de</td><td class="pinyin-cell" onclick="playPinyin('di', this)">di</td><td class="pinyin-cell" onclick="playPinyin('du', this)">du</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('dai', this)">dai</td><td class="pinyin-cell" onclick="playPinyin('dei', this)">dei</td><td class="pinyin-cell" onclick="playPinyin('dao', this)">dao</td><td class="pinyin-cell" onclick="playPinyin('dou', this)">dou</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('die', this)">die</td><td class="pinyin-cell" onclick="playPinyin('diao', this)">diao</td><td class="pinyin-cell" onclick="playPinyin('diu', this)">diu</td><td class="pinyin-cell" onclick="playPinyin('dua', this)">dua</td><td class="pinyin-cell" onclick="playPinyin('duo', this)">duo</td><td class="pinyin-cell" onclick="playPinyin('dui', this)">dui</td><td class="pinyin-cell" onclick="playPinyin('dan', this)">dan</td><td class="pinyin-cell" onclick="playPinyin('den', this)">den</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('dian', this)">dian</td><td class="pinyin-cell" onclick="playPinyin('duan', this)">duan</td><td class="pinyin-cell" onclick="playPinyin('dun', this)">dun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('dang', this)">dang</td><td class="pinyin-cell" onclick="playPinyin('deng', this)">deng</td><td class="pinyin-cell" onclick="playPinyin('dong', this)">dong</td><td class="pinyin-cell" onclick="playPinyin('ding', this)">ding</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>t</td><td class="pinyin-cell" onclick="playPinyin('ta', this)">ta</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('te', this)">te</td><td class="pinyin-cell" onclick="playPinyin('ti', this)">ti</td><td class="pinyin-cell" onclick="playPinyin('tu', this)">tu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('tai', this)">tai</td><td class="pinyin-cell" onclick="playPinyin('tei', this)">tei</td><td class="pinyin-cell" onclick="playPinyin('tao', this)">tao</td><td class="pinyin-cell" onclick="playPinyin('tou', this)">tou</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('tie', this)">tie</td><td class="pinyin-cell" onclick="playPinyin('tiao', this)">tiao</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('tuo', this)">tuo</td><td class="pinyin-cell" onclick="playPinyin('tui', this)">tui</td><td class="pinyin-cell" onclick="playPinyin('tan', this)">tan</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('tian', this)">tian</td><td class="pinyin-cell" onclick="playPinyin('tuan', this)">tuan</td><td class="pinyin-cell" onclick="playPinyin('tun', this)">tun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('tang', this)">tang</td><td class="pinyin-cell" onclick="playPinyin('teng', this)">teng</td><td class="pinyin-cell" onclick="playPinyin('tong', this)">tong</td><td class="pinyin-cell" onclick="playPinyin('ting', this)">ting</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>n</td><td class="pinyin-cell" onclick="playPinyin('na', this)">na</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ne', this)">ne</td><td class="pinyin-cell" onclick="playPinyin('ni', this)">ni</td><td class="pinyin-cell" onclick="playPinyin('nu', this)">nu</td><td class="pinyin-cell" onclick="playPinyin('nü', this)">nü</td><td class="pinyin-cell" onclick="playPinyin('nai', this)">nai</td><td class="pinyin-cell" onclick="playPinyin('nei', this)">nei</td><td class="pinyin-cell" onclick="playPinyin('nao', this)">nao</td><td class="pinyin-cell" onclick="playPinyin('nou', this)">nou</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('nie', this)">nie</td><td class="pinyin-cell" onclick="playPinyin('niao', this)">niao</td><td class="pinyin-cell" onclick="playPinyin('niu', this)">niu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('nuo', this)">nuo</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('nan', this)">nan</td><td class="pinyin-cell" onclick="playPinyin('nen', this)">nen</td><td class="pinyin-cell" onclick="playPinyin('nin', this)">nin</td><td class="pinyin-cell" onclick="playPinyin('nian', this)">nian</td><td class="pinyin-cell" onclick="playPinyin('nuan', this)">nuan</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('nüan', this)">nüan</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('nang', this)">nang</td><td class="pinyin-cell" onclick="playPinyin('neng', this)">neng</td><td class="pinyin-cell" onclick="playPinyin('nong', this)">nong</td><td class="pinyin-cell" onclick="playPinyin('ning', this)">ning</td><td class="pinyin-cell" onclick="playPinyin('niang', this)">niang</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>l</td><td class="pinyin-cell" onclick="playPinyin('la', this)">la</td><td class="pinyin-cell" onclick="playPinyin('lo', this)">lo</td><td class="pinyin-cell" onclick="playPinyin('le', this)">le</td><td class="pinyin-cell" onclick="playPinyin('li', this)">li</td><td class="pinyin-cell" onclick="playPinyin('lu', this)">lu</td><td class="pinyin-cell" onclick="playPinyin('lü', this)">lü</td><td class="pinyin-cell" onclick="playPinyin('lai', this)">lai</td><td class="pinyin-cell" onclick="playPinyin('lei', this)">lei</td><td class="pinyin-cell" onclick="playPinyin('lao', this)">lao</td><td class="pinyin-cell" onclick="playPinyin('lou', this)">lou</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('lie', this)">lie</td><td class="pinyin-cell" onclick="playPinyin('liao', this)">liao</td><td class="pinyin-cell" onclick="playPinyin('liu', this)">liu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('luo', this)">luo</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('lan', this)">lan</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('lin', this)">lin</td><td class="pinyin-cell" onclick="playPinyin('lian', this)">lian</td><td class="pinyin-cell" onclick="playPinyin('luan', this)">luan</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('lüan', this)">lüan</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('lang', this)">lang</td><td class="pinyin-cell" onclick="playPinyin('leng', this)">leng</td><td class="pinyin-cell" onclick="playPinyin('long', this)">long</td><td class="pinyin-cell" onclick="playPinyin('ling', this)">ling</td><td class="pinyin-cell" onclick="playPinyin('liang', this)">liang</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>g</td><td class="pinyin-cell" onclick="playPinyin('ga', this)">ga</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ge', this)">ge</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('gu', this)">gu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('gai', this)">gai</td><td class="pinyin-cell" onclick="playPinyin('gei', this)">gei</td><td class="pinyin-cell" onclick="playPinyin('gao', this)">gao</td><td class="pinyin-cell" onclick="playPinyin('gou', this)">gou</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('gua', this)">gua</td><td class="pinyin-cell" onclick="playPinyin('guo', this)">guo</td><td class="pinyin-cell" onclick="playPinyin('gui', this)">gui</td><td class="pinyin-cell" onclick="playPinyin('gan', this)">gan</td><td class="pinyin-cell" onclick="playPinyin('gen', this)">gen</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('guan', this)">guan</td><td class="pinyin-cell" onclick="playPinyin('gun', this)">gun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('gang', this)">gang</td><td class="pinyin-cell" onclick="playPinyin('geng', this)">geng</td><td class="pinyin-cell" onclick="playPinyin('gong', this)">gong</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('guang', this)">guang</td><td class="empty-cell">-</td></tr>
+<tr><td>k</td><td class="pinyin-cell" onclick="playPinyin('ka', this)">ka</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ke', this)">ke</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ku', this)">ku</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('kai', this)">kai</td><td class="pinyin-cell" onclick="playPinyin('kei', this)">kei</td><td class="pinyin-cell" onclick="playPinyin('kao', this)">kao</td><td class="pinyin-cell" onclick="playPinyin('kou', this)">kou</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('kua', this)">kua</td><td class="pinyin-cell" onclick="playPinyin('kuo', this)">kuo</td><td class="pinyin-cell" onclick="playPinyin('kui', this)">kui</td><td class="pinyin-cell" onclick="playPinyin('kan', this)">kan</td><td class="pinyin-cell" onclick="playPinyin('ken', this)">ken</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('kuan', this)">kuan</td><td class="pinyin-cell" onclick="playPinyin('kun', this)">kun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('kang', this)">kang</td><td class="pinyin-cell" onclick="playPinyin('keng', this)">keng</td><td class="pinyin-cell" onclick="playPinyin('kong', this)">kong</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('kuang', this)">kuang</td><td class="empty-cell">-</td></tr>
+<tr><td>h</td><td class="pinyin-cell" onclick="playPinyin('ha', this)">ha</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('he', this)">he</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('hu', this)">hu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('hai', this)">hai</td><td class="pinyin-cell" onclick="playPinyin('hei', this)">hei</td><td class="pinyin-cell" onclick="playPinyin('hao', this)">hao</td><td class="pinyin-cell" onclick="playPinyin('hou', this)">hou</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('hua', this)">hua</td><td class="pinyin-cell" onclick="playPinyin('huo', this)">huo</td><td class="pinyin-cell" onclick="playPinyin('hui', this)">hui</td><td class="pinyin-cell" onclick="playPinyin('han', this)">han</td><td class="pinyin-cell" onclick="playPinyin('hen', this)">hen</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('huan', this)">huan</td><td class="pinyin-cell" onclick="playPinyin('hun', this)">hun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('hang', this)">hang</td><td class="pinyin-cell" onclick="playPinyin('heng', this)">heng</td><td class="pinyin-cell" onclick="playPinyin('hong', this)">hong</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('huang', this)">huang</td><td class="empty-cell">-</td></tr>
+<tr><td>j</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ji', this)">ji</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ju', this)">ju</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('jie', this)">jie</td><td class="pinyin-cell" onclick="playPinyin('jiao', this)">jiao</td><td class="pinyin-cell" onclick="playPinyin('jiu', this)">jiu</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('jin', this)">jin</td><td class="pinyin-cell" onclick="playPinyin('jian', this)">jian</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('juan', this)">juan</td><td class="pinyin-cell" onclick="playPinyin('jun', this)">jun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('jing', this)">jing</td><td class="pinyin-cell" onclick="playPinyin('jiang', this)">jiang</td><td class="pinyin-cell" onclick="playPinyin('jiong', this)">jiong</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>q</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('qi', this)">qi</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('qu', this)">qu</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('qie', this)">qie</td><td class="pinyin-cell" onclick="playPinyin('qiao', this)">qiao</td><td class="pinyin-cell" onclick="playPinyin('qiu', this)">qiu</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('qin', this)">qin</td><td class="pinyin-cell" onclick="playPinyin('qian', this)">qian</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('quan', this)">quan</td><td class="pinyin-cell" onclick="playPinyin('qun', this)">qun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('qing', this)">qing</td><td class="pinyin-cell" onclick="playPinyin('qiang', this)">qiang</td><td class="pinyin-cell" onclick="playPinyin('qiong', this)">qiong</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>x</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('xi', this)">xi</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('xu', this)">xu</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('xie', this)">xie</td><td class="pinyin-cell" onclick="playPinyin('xiao', this)">xiao</td><td class="pinyin-cell" onclick="playPinyin('xiu', this)">xiu</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('xin', this)">xin</td><td class="pinyin-cell" onclick="playPinyin('xian', this)">xian</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('xuan', this)">xuan</td><td class="pinyin-cell" onclick="playPinyin('xun', this)">xun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('xing', this)">xing</td><td class="pinyin-cell" onclick="playPinyin('xiang', this)">xiang</td><td class="pinyin-cell" onclick="playPinyin('xiong', this)">xiong</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>z</td><td class="pinyin-cell" onclick="playPinyin('za', this)">za</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ze', this)">ze</td><td class="pinyin-cell" onclick="playPinyin('zi', this)">zi</td><td class="pinyin-cell" onclick="playPinyin('zu', this)">zu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('zai', this)">zai</td><td class="pinyin-cell" onclick="playPinyin('zei', this)">zei</td><td class="pinyin-cell" onclick="playPinyin('zao', this)">zao</td><td class="pinyin-cell" onclick="playPinyin('zou', this)">zou</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('zuo', this)">zuo</td><td class="pinyin-cell" onclick="playPinyin('zui', this)">zui</td><td class="pinyin-cell" onclick="playPinyin('zan', this)">zan</td><td class="pinyin-cell" onclick="playPinyin('zen', this)">zen</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('zuan', this)">zuan</td><td class="pinyin-cell" onclick="playPinyin('zun', this)">zun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('zang', this)">zang</td><td class="pinyin-cell" onclick="playPinyin('zeng', this)">zeng</td><td class="pinyin-cell" onclick="playPinyin('zong', this)">zong</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>c</td><td class="pinyin-cell" onclick="playPinyin('ca', this)">ca</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ce', this)">ce</td><td class="pinyin-cell" onclick="playPinyin('ci', this)">ci</td><td class="pinyin-cell" onclick="playPinyin('cu', this)">cu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('cai', this)">cai</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('cao', this)">cao</td><td class="pinyin-cell" onclick="playPinyin('cou', this)">cou</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('cuo', this)">cuo</td><td class="pinyin-cell" onclick="playPinyin('cui', this)">cui</td><td class="pinyin-cell" onclick="playPinyin('can', this)">can</td><td class="pinyin-cell" onclick="playPinyin('cen', this)">cen</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('cuan', this)">cuan</td><td class="pinyin-cell" onclick="playPinyin('cun', this)">cun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('cang', this)">cang</td><td class="pinyin-cell" onclick="playPinyin('ceng', this)">ceng</td><td class="pinyin-cell" onclick="playPinyin('cong', this)">cong</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>s</td><td class="pinyin-cell" onclick="playPinyin('sa', this)">sa</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('se', this)">se</td><td class="pinyin-cell" onclick="playPinyin('si', this)">si</td><td class="pinyin-cell" onclick="playPinyin('su', this)">su</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('sai', this)">sai</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('sao', this)">sao</td><td class="pinyin-cell" onclick="playPinyin('sou', this)">sou</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('suo', this)">suo</td><td class="pinyin-cell" onclick="playPinyin('sui', this)">sui</td><td class="pinyin-cell" onclick="playPinyin('san', this)">san</td><td class="pinyin-cell" onclick="playPinyin('sen', this)">sen</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('suan', this)">suan</td><td class="pinyin-cell" onclick="playPinyin('sun', this)">sun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('sang', this)">sang</td><td class="pinyin-cell" onclick="playPinyin('seng', this)">seng</td><td class="pinyin-cell" onclick="playPinyin('song', this)">song</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+<tr><td>zh</td><td class="pinyin-cell" onclick="playPinyin('zha', this)">zha</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('zhe', this)">zhe</td><td class="pinyin-cell" onclick="playPinyin('zhi', this)">zhi</td><td class="pinyin-cell" onclick="playPinyin('zhu', this)">zhu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('zhai', this)">zhai</td><td class="pinyin-cell" onclick="playPinyin('zhei', this)">zhei</td><td class="pinyin-cell" onclick="playPinyin('zhao', this)">zhao</td><td class="pinyin-cell" onclick="playPinyin('zhou', this)">zhou</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('zhua', this)">zhua</td><td class="pinyin-cell" onclick="playPinyin('zhuo', this)">zhuo</td><td class="pinyin-cell" onclick="playPinyin('zhui', this)">zhui</td><td class="pinyin-cell" onclick="playPinyin('zhan', this)">zhan</td><td class="pinyin-cell" onclick="playPinyin('zhen', this)">zhen</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('zhuan', this)">zhuan</td><td class="pinyin-cell" onclick="playPinyin('zhun', this)">zhun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('zhang', this)">zhang</td><td class="pinyin-cell" onclick="playPinyin('zheng', this)">zheng</td><td class="pinyin-cell" onclick="playPinyin('zhong', this)">zhong</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('zhuang', this)">zhuang</td><td class="empty-cell">-</td></tr>
+<tr><td>ch</td><td class="pinyin-cell" onclick="playPinyin('cha', this)">cha</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('che', this)">che</td><td class="pinyin-cell" onclick="playPinyin('chi', this)">chi</td><td class="pinyin-cell" onclick="playPinyin('chu', this)">chu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('chai', this)">chai</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('chao', this)">chao</td><td class="pinyin-cell" onclick="playPinyin('chou', this)">chou</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('chua', this)">chua</td><td class="pinyin-cell" onclick="playPinyin('chuo', this)">chuo</td><td class="pinyin-cell" onclick="playPinyin('chui', this)">chui</td><td class="pinyin-cell" onclick="playPinyin('chan', this)">chan</td><td class="pinyin-cell" onclick="playPinyin('chen', this)">chen</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('chuan', this)">chuan</td><td class="pinyin-cell" onclick="playPinyin('chun', this)">chun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('chang', this)">chang</td><td class="pinyin-cell" onclick="playPinyin('cheng', this)">cheng</td><td class="pinyin-cell" onclick="playPinyin('chong', this)">chong</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('chuang', this)">chuang</td><td class="empty-cell">-</td></tr>
+<tr><td>sh</td><td class="pinyin-cell" onclick="playPinyin('sha', this)">sha</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('she', this)">she</td><td class="pinyin-cell" onclick="playPinyin('shi', this)">shi</td><td class="pinyin-cell" onclick="playPinyin('shu', this)">shu</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('shai', this)">shai</td><td class="pinyin-cell" onclick="playPinyin('shei', this)">shei</td><td class="pinyin-cell" onclick="playPinyin('shao', this)">shao</td><td class="pinyin-cell" onclick="playPinyin('shou', this)">shou</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('shua', this)">shua</td><td class="pinyin-cell" onclick="playPinyin('shuo', this)">shuo</td><td class="pinyin-cell" onclick="playPinyin('shui', this)">shui</td><td class="pinyin-cell" onclick="playPinyin('shan', this)">shan</td><td class="pinyin-cell" onclick="playPinyin('shen', this)">shen</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('shuan', this)">shuan</td><td class="pinyin-cell" onclick="playPinyin('shun', this)">shun</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('shang', this)">shang</td><td class="pinyin-cell" onclick="playPinyin('sheng', this)">sheng</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('shuang', this)">shuang</td><td class="empty-cell">-</td></tr>
+<tr><td>r</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('re', this)">re</td><td class="pinyin-cell" onclick="playPinyin('ri', this)">ri</td><td class="pinyin-cell" onclick="playPinyin('ru', this)">ru</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('rao', this)">rao</td><td class="pinyin-cell" onclick="playPinyin('rou', this)">rou</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ruo', this)">ruo</td><td class="pinyin-cell" onclick="playPinyin('rui', this)">rui</td><td class="pinyin-cell" onclick="playPinyin('ran', this)">ran</td><td class="pinyin-cell" onclick="playPinyin('ren', this)">ren</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('ruan', this)">ruan</td><td class="pinyin-cell" onclick="playPinyin('run', this)">run</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="pinyin-cell" onclick="playPinyin('rang', this)">rang</td><td class="pinyin-cell" onclick="playPinyin('reng', this)">reng</td><td class="pinyin-cell" onclick="playPinyin('rong', this)">rong</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td><td class="empty-cell">-</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <footer>
+        مصمم للعمل بسلاسة على جميع الأجهزة (Android, iOS, Windows, Mac) بدون الحاجة للاتصال بالإنترنت
+    </footer>
+</div>
+
+<script>
+    const synth = window.speechSynthesis;
+    let chineseVoice = null;
+    let activeAudio = null;
+
+    function initVoices() {
+        if (!synth) return;
+        const voices = synth.getVoices();
+        // Priority to Chinese voices (zh-CN, zh-TW, zh-HK, cmn)
+        chineseVoice = voices.find(v => v.lang.startsWith('zh') || v.lang.includes('cmn') || v.lang.includes('Chinese'));
+    }
+
+    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = initVoices;
+    }
+    initVoices();
+
+    function updateStatus(text, isError = false) {
+        const status = document.getElementById('status');
+        const dot = document.getElementById('status-dot');
+        status.innerText = text;
+        dot.style.backgroundColor = isError ? '#ef4444' : '#10b981';
+    }
+
+    function playPinyin(text, element) {
+        const engine = document.getElementById('engine').value;
+
+        // Clear active styles
+        document.querySelectorAll('.playing').forEach(el => el.classList.remove('playing'));
+        element.classList.add('playing');
+
+        if (engine === 'tts') {
+            if (!synth) {
+                updateStatus('المحرك الصوتي غير مدعوم في هذا المتصفح', true);
+                element.classList.remove('playing');
+                return;
+            }
+
+            synth.cancel(); // Stop any ongoing speech
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.85; // Natural slow speed for learning
+            utterance.pitch = 1.0;
+
+            if (chineseVoice) utterance.voice = chineseVoice;
+
+            utterance.onend = () => {
+                element.classList.remove('playing');
+                updateStatus('جاهز للتشغيل');
+            };
+
+            utterance.onerror = (e) => {
+                console.warn('TTS error:', e);
+                element.classList.remove('playing');
+                updateStatus('خطأ أثناء نطق: ' + text, true);
+            };
+
+            synth.speak(utterance);
+            updateStatus('جاري نطق: ' + text);
+
+        } else {
+            // Local Audio Engine
+            if (activeAudio) {
+                activeAudio.pause();
+                activeAudio.currentTime = 0;
+            }
+
+            activeAudio = new Audio(`audio/${text}.mp3`);
+            
+            const playPromise = activeAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    updateStatus('جاري تشغيل: ' + text + '.mp3');
+                }).catch(err => {
+                    updateStatus('تعذر العثور على audio/' + text + '.mp3', true);
+                    element.classList.remove('playing');
+                });
+            }
+
+            activeAudio.onended = () => {
+                element.classList.remove('playing');
+                updateStatus('جاهز للتشغيل');
+            };
+        }
+    }
+</script>
+
+</body>
+</html>
